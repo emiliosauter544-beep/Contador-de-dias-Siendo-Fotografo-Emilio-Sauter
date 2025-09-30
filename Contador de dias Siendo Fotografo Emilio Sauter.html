@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Contador de días — Desde 19 de julio</title>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    body{margin:0;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(180deg,#f7f7fb,#ffffff);color:#111}
+    .card{max-width:520px;width:100%;background:white;border-radius:12px;box-shadow:0 8px 30px rgba(17,24,39,0.06);padding:20px;text-align:center}
+    h1{margin:0 0 6px;font-size:18px}
+    p.sub{margin:0 0 18px;color:#555}
+    .big{font-size:54px;line-height:1;font-weight:700;margin:8px 0}
+    .label{font-size:13px;color:#666;margin-top:6px}
+    .meta{font-size:13px;color:#444;margin-top:10px}
+    small{color:#777}
+    @media (max-width:420px){.big{font-size:40px}}
+  </style>
+</head>
+<body>
+  <div class="card" role="region" aria-label="Contador de días desde inicio como fotógrafo">
+    <h1>Cuántos días llevo siendo fotógrafo</h1>
+    <p class="sub">Contador automático (se actualiza cada día)</p>
+
+    <div id="count" class="big" aria-live="polite">—</div>
+    <div class="label">días</div>
+
+    <div class="meta">Empecé el <strong id="startDateText">19 de julio</strong><br><small id="iso">(fecha editable en el código)</small></div>
+  </div>
+
+  <script>
+    // ---------- CONFIGURACIÓN ----------
+    // Cambia aquí la fecha de inicio si necesitas otro año o hora.
+    // Formato ISO: YYYY-MM-DDTHH:MM:SS   (ej: '2025-07-19T00:00:00')
+    const startDateISO = '2025-07-19T00:00:00';
+    // ------------------------------------
+
+    const start = new Date(startDateISO);
+    const startTextEl = document.getElementById('startDateText');
+    const isoEl = document.getElementById('iso');
+
+    // Muestra la fecha legible (ej: 19 de julio de 2025)
+    function formatDateEs(d){
+      const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      return `${d.getUTCDate()} de ${meses[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
+    }
+
+    startTextEl.textContent = formatDateEs(start);
+    isoEl.textContent = `ISO: ${start.toISOString()}`;
+
+    const countEl = document.getElementById('count');
+
+    // Calcula días completos transcurridos desde la fecha de inicio hasta 'ahora' en la zona UTC.
+    function daysSinceStart(now = new Date()){
+      // Queremos contar días completos: diferencia en milisegundos, dividir por 86400000 y truncar con Math.floor
+      const diffMs = now.getTime() - start.getTime();
+      const days = Math.floor(diffMs / 86400000);
+      return days >= 0 ? days : 0;
+    }
+
+    function update(){
+      const now = new Date();
+      countEl.textContent = daysSinceStart(now).toLocaleString();
+    }
+
+    // Actualiza inmediatamente y luego cada minuto (no es costoso).
+    update();
+    // Recalcula cuando pase medianoche local: ajustamos el siguiente tick para el inicio del minuto siguiente
+    setInterval(update, 60_000);
+
+    // También forzamos una actualización justo después de que el día cambie localmente.
+    // Esto cubre el caso en que la página permanece abierta durante medianoche.
+    (function scheduleMidnightRefresh(){
+      const now = new Date();
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 0, 0, 1);
+      const msToTomorrow = tomorrow - now;
+      setTimeout(()=>{ update(); scheduleMidnightRefresh(); }, msToTomorrow);
+    })();
+
+    // Nota: el contador usa la fecha exacta que pongas en startDateISO (arriba). Cambia solo esa constante.
+  </script>
+</body>
+</html>
